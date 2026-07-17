@@ -5,7 +5,7 @@ description: Use when working tasks in a ply repo (./ply next/brief/done loop) �
 
 # ply-flow
 
-O loop vive no CLAUDE.md. Esta skill cobre o que não cabe lá — leia só a
+O loop vive no AGENTS.md. Esta skill cobre o que não cabe lá — leia só a
 reference que a situação pede:
 
 - Task grande demais → `references/decompose.md`

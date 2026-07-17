@@ -4,8 +4,8 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-TASKS="$ROOT/tasks"; SPECS="$ROOT/specs"; JOURNAL="$ROOT/journal"
-PLYD="$ROOT/.ply"; CLAIMS="$PLYD/claims"; USAGE="$PLYD/usage.tsv"
+PLYD="$ROOT/.ply"; TASKS="$PLYD/tasks"; SPECS="$PLYD/specs"; JOURNAL="$PLYD/journal"
+CLAIMS="$PLYD/claims"; USAGE="$PLYD/usage.tsv"; AGENTS="$ROOT/AGENTS.md"
 LESSONS="$TASKS/LESSONS.md"
 TEST_CMD=""
 [ -f "$PLYD/config" ] && . "$PLYD/config"
@@ -34,12 +34,12 @@ resolve_kit() { # resolve_kit [--kit dir] → imprime path absoluto; exit 1 se n
   if [ -z "$kit" ] && [ -d "$ROOT/kit" ]; then kit="$ROOT/kit"; fi
   [ -n "$kit" ] || die "kit não encontrado — passe --kit <dir> ou use ./install.sh"
   kit="$(cd "$kit" && pwd)" || die "kit inválido: $kit"
-  [ -f "$kit/CLAUDE.md" ] && [ -f "$kit/skills/ply-flow/SKILL.md" ] \
-    || die "kit incompleto em $kit (faltam CLAUDE.md ou skills/ply-flow)"
+  [ -f "$kit/AGENTS.md" ] && [ -f "$kit/skills/ply-flow/SKILL.md" ] \
+    || die "kit incompleto em $kit (faltam AGENTS.md ou skills/ply-flow)"
   printf '%s\n' "$kit"
 }
 
-upsert_claude_block() { # upsert_claude_block <kit/CLAUDE.md> <dest/CLAUDE.md>
+upsert_agents_block() { # upsert_agents_block <kit/AGENTS.md> <dest/AGENTS.md>
   local src="$1" dest="$2"
   if [ ! -f "$dest" ] || ! grep -q '<!-- ply:start -->' "$dest" 2>/dev/null; then
     { [ -f "$dest" ] && cat "$dest"
@@ -78,17 +78,52 @@ upsert_claude_block() { # upsert_claude_block <kit/CLAUDE.md> <dest/CLAUDE.md>
   ' "$dest" > "$dest.tmp" && mv "$dest.tmp" "$dest"
 }
 
+ensure_claude_link() { # CLAUDE.md → AGENTS.md (compat Claude)
+  local dest="$ROOT/CLAUDE.md"
+  if [ -L "$dest" ]; then
+    [ "$(readlink "$dest")" = "AGENTS.md" ] || { rm "$dest"; ln -sf "AGENTS.md" "$dest"; }
+  elif [ -e "$dest" ]; then
+    rm "$dest"
+    ln -sf "AGENTS.md" "$dest"
+  else
+    ln -sf "AGENTS.md" "$dest"
+  fi
+}
+
+migrate_legacy_layout() {
+  local d
+  for d in tasks specs journal; do
+    [ -d "$ROOT/$d" ] && [ ! -d "$PLYD/$d" ] && mv "$ROOT/$d" "$PLYD/$d"
+  done
+  if [ -d "$ROOT/.claude/skills/ply-flow" ] && [ ! -d "$PLYD/skills/ply-flow" ]; then
+    mkdir -p "$PLYD/skills"
+    mv "$ROOT/.claude/skills/ply-flow" "$PLYD/skills/ply-flow"
+  fi
+  if [ -f "$PLYD/AGENTS.md" ] && [ ! -f "$AGENTS" ]; then
+    mv "$PLYD/AGENTS.md" "$AGENTS"
+  fi
+}
+
 install_kit() { # install_kit <kit_dir>
-  local kit="$1"
-  mkdir -p "$ROOT/.claude/skills"
-  rm -rf "$ROOT/.claude/skills/ply-flow"
-  cp -R "$kit/skills/ply-flow" "$ROOT/.claude/skills/ply-flow"
-  upsert_claude_block "$kit/CLAUDE.md" "$ROOT/CLAUDE.md"
+  local kit="$1" migrate=""
+  mkdir -p "$PLYD/skills"
+  rm -rf "$PLYD/skills/ply-flow"
+  cp -R "$kit/skills/ply-flow" "$PLYD/skills/ply-flow"
+  if [ ! -f "$AGENTS" ] && [ -f "$ROOT/CLAUDE.md" ] && [ ! -L "$ROOT/CLAUDE.md" ]; then
+    migrate="$ROOT/CLAUDE.md"
+    upsert_agents_block "$kit/AGENTS.md" "$migrate"
+    mv "$migrate" "$AGENTS"
+  else
+    [ -L "$AGENTS" ] && rm "$AGENTS"
+    upsert_agents_block "$kit/AGENTS.md" "$AGENTS"
+  fi
+  ensure_claude_link
 }
 
 cmd_init() {
   local kit
   kit=$(resolve_kit "$@") || exit 1
+  migrate_legacy_layout
   mkdir -p "$TASKS" "$SPECS" "$JOURNAL" "$CLAIMS"
   [ -f "$PLYD/config" ] || printf '# comando de teste do projeto (test: da task vira argumento)\nTEST_CMD="pytest -q"\n' > "$PLYD/config"
   [ -f "$TASKS/_template.md" ] || cat > "$TASKS/_template.md" <<'EOF'
@@ -125,7 +160,7 @@ title: TÍTULO
 <!-- Máx ~1 página. Passou disso? Divida a feature em duas specs. -->
 EOF
   install_kit "$kit"
-  echo "ply inicializado (kit: skill ply-flow + bloco CLAUDE.md). Edite .ply/config (TEST_CMD); crie: ./ply spec \"...\" e ./ply new \"...\""
+  echo "ply inicializado (kit: skill ply-flow + AGENTS.md). Edite .ply/config (TEST_CMD); crie: ./ply spec \"...\" e ./ply new \"...\""
 }
 
 next_id() { # next_id <dir>
@@ -282,7 +317,7 @@ cmd_brief() {
 title:   $(fm "$f" title)
 status:  $(fm "$f" status)
 size:    $(fm "$f" size)"
-  [ -n "$(fm "$f" spec)" ] && out+=$'\n'"spec:    specs/$(fm "$f" spec)-*.md (abra SÓ se o AC não bastar)"
+  [ -n "$(fm "$f" spec)" ] && out+=$'\n'"spec:    .ply/specs/$(fm "$f" spec)-*.md (abra SÓ se o AC não bastar)"
   if [ -n "$deps" ]; then
     ds=""
     for d in $deps; do
@@ -381,7 +416,7 @@ cmd_log() {
   require_owner "$id"
   [ -n "$*" ] || die "uso: ply log <id> --as <agente> \"<decisão>\""
   jlog "$id" "[$AS] $*"
-  echo "registrado em journal/$id.md"
+  echo "registrado em .ply/journal/$id.md"
 }
 
 cmd_journal() {
@@ -458,7 +493,7 @@ usage() {
   cat <<'EOF'
 ply — ledger de tarefas token-frugal (pull paralelo, gates determinísticos)
 
-  ./ply init [--kit <dir>]            bootstrap + skill + bloco CLAUDE.md
+  ./ply init [--kit <dir>]            bootstrap + skill + AGENTS.md (+ symlink CLAUDE.md)
   ./ply spec "<título>"               cria spec enxuta (1 página)
   ./ply new "<título>" [--spec N] [--dep "010 011"]
   ./ply next                          próxima: todo, deps done, sem claim, sem overlap
@@ -469,7 +504,7 @@ ply — ledger de tarefas token-frugal (pull paralelo, gates determinísticos)
   ./ply done <id> --as <agente>       check + done + libera claim
   ./ply log <id> --as <agente> "<msg>"  decisão → journal
   ./ply release <id> [--as <agente>]  solta claim (sem --as = override humano)
-  ./ply lesson "<txt>"                1 linha em tasks/LESSONS.md
+  ./ply lesson "<txt>"                1 linha em .ply/tasks/LESSONS.md
   ./ply status                        placar + claims ativos
   ./ply journal <id>                  diário da task (para humanos)
   ./ply metrics [<id>]                proxy (bytes) + real (Claude Code)

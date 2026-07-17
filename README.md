@@ -31,12 +31,13 @@ Se você já clonou este repositório:
 ./install.sh /caminho/do/seu-repo   # default: cwd
 ```
 
-Os dois caminhos copiam `ply`, rodam `./ply init --kit …` (dirs + skill `ply-flow` + bloco
-marcado em `CLAUDE.md`). Depois edite `.ply/config` e ajuste `TEST_CMD` para o
-comando de teste do projeto (o campo `test:` de cada task vira argumento dele).
+Os dois caminhos copiam `ply`, rodam `./ply init --kit …` (ledger em `.ply/` + skill
+`ply-flow` + bloco marcado em `AGENTS.md` na raiz, com `CLAUDE.md` como symlink).
+Depois edite `.ply/config` e ajuste `TEST_CMD` para o comando de teste do projeto
+(o campo `test:` de cada task vira argumento dele).
 
 Reinstalar / atualizar kit: rode o mesmo comando de novo (idempotente; o bloco
-entre `<!-- ply:start -->` e `<!-- ply:end -->` é atualizado in-place).
+entre `<!-- ply:start -->` e `<!-- ply:end -->` em `AGENTS.md` é atualizado in-place).
 
 ## Primeiros 5 minutos
 
@@ -57,10 +58,10 @@ id=$(./ply next)                         # próxima task desbloqueada
 
 | Camada | Quando entra no contexto | Custo |
 |--------|--------------------------|-------|
-| `CLAUDE.md` (kit) | sempre (é o processo) | ~400 tokens, teto travado por teste |
+| `AGENTS.md` (canônico) / `CLAUDE.md` (symlink) | sempre (é o processo) | ~400 tokens, teto travado por teste |
 | `ply brief <id>` | 1 task por vez, sob demanda | pequeno; só o contrato da task |
-| `specs/*.md` | só se o AC do brief não bastar | opcional |
-| `journal/*.md`, `LESSONS.md` | nunca no loop; leitura humana / skim inicial | fora do caminho quente |
+| `.ply/specs/*.md` | só se o AC do brief não bastar | opcional |
+| `.ply/journal/*.md`, `.ply/tasks/LESSONS.md` | nunca no loop; leitura humana / skim inicial | fora do caminho quente |
 
 O agente **nunca** lê o backlog inteiro: puxa só a task da vez. `./ply metrics`
 mede o proxy (bytes servidos por task, em `.ply/usage.tsv`) e, com `<id>`, o
