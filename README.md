@@ -7,11 +7,23 @@ LLM e nunca faz rede**; toda decisão de gate é determinística.
 
 ## Instalação num repo
 
-No diretório do projeto:
+No diretório do projeto (repo **público** no GitHub):
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/adrianomirandaa/ply/master/install.sh | bash
 ```
+
+Repo **privado** — use token (`PLY_GITHUB_TOKEN` ou `GITHUB_TOKEN`) ou clone local:
+
+```bash
+export PLY_GITHUB_TOKEN=ghp_…   # fine-grained ou classic, escopo repo
+curl -fsSL \
+  -H "Authorization: Bearer $PLY_GITHUB_TOKEN" \
+  -H "Accept: application/vnd.github.raw+json" \
+  "https://api.github.com/repos/adrianomirandaa/ply/contents/install.sh?ref=master" | bash
+```
+
+O `install.sh` remoto detecta o token e baixa o tarball via API do GitHub. Com `gh` autenticado, o token é inferido automaticamente.
 
 Se você já clonou este repositório:
 
