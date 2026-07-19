@@ -33,31 +33,6 @@ Depois edite `.ply/config` e ajuste `TEST_CMD` para o comando de teste do projet
 Reinstalar / atualizar kit: rode o mesmo comando de novo (idempotente; o bloco
 entre `<!-- ply:start -->` e `<!-- ply:end -->` em `AGENTS.md` é atualizado in-place).
 
-### Fork ou mirror privado
-
-Se você mantém um fork ou mirror **privado**, use clone local ou passe um token
-GitHub (`PLY_GITHUB_TOKEN`, `GITHUB_TOKEN` — inferido automaticamente com `gh`
-autenticado). Para tarball autenticado, defina `PLY_REPO=seu-usuario/ply`:
-
-```bash
-export PLY_GITHUB_TOKEN=ghp_…   # fine-grained ou classic, escopo repo
-export PLY_REPO=seu-usuario/ply
-curl -fsSL \
-  -H "Authorization: Bearer $PLY_GITHUB_TOKEN" \
-  -H "Accept: application/vnd.github.raw+json" \
-  "https://api.github.com/repos/${PLY_REPO}/contents/install.sh?ref=master" | bash
-```
-
-## Desenvolvimento
-
-Contribuir ou rodar localmente — sem dependências além de bash e coreutils:
-
-```bash
-git clone https://github.com/adrianomirandaa/ply.git
-cd ply
-./test_ply.sh
-```
-
 ## Primeiros 5 minutos
 
 ```bash
@@ -76,7 +51,7 @@ id=$(./ply next)                         # próxima task desbloqueada
 ## A economia de token
 
 | Camada | Quando entra no contexto | Custo |
-|--------|--------------------------|-------|
+| -------- | -------------------------- | ------- |
 | `AGENTS.md` (canônico) / `CLAUDE.md` (symlink) | sempre (é o processo) | ~400 tokens, teto travado por teste |
 | `ply brief <id>` | 1 task por vez, sob demanda | pequeno; só o contrato da task |
 | `.ply/specs/*.md` | só se o AC do brief não bastar | opcional |
