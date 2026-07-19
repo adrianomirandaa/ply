@@ -67,7 +67,7 @@ else
   fi
   if ! "${dl[@]}" | tar -xz -C "$tmp"; then
     if [ -z "$token" ]; then
-      die "falha ao baixar ${tarball} (404? repo privado — exporte PLY_GITHUB_TOKEN ou clone o repo e rode ./install.sh)"
+      die "falha ao baixar ${tarball} (404? verifique PLY_REPO/PLY_BRANCH ou clone o repo e rode ./install.sh localmente)"
     fi
     die "falha ao baixar ${tarball}"
   fi

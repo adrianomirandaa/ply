@@ -5,39 +5,58 @@ o estado do trabalho vive em arquivos Markdown e o agente LLM consome apenas a
 saída mínima de cada comando. O script é bash puro + coreutils — **nunca chama
 LLM e nunca faz rede**; toda decisão de gate é determinística.
 
-## Instalação num repo
+Licenciado sob [MIT](LICENSE).
 
-No diretório do projeto (repo **público** no GitHub):
+## Instalação
+
+Instale `ply` no diretório do **seu** projeto (onde ficará `.ply/` e `./ply`):
+
+### One-liner (recomendado)
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/adrianomirandaa/ply/master/install.sh | bash
 ```
 
-Repo **privado** — use token (`PLY_GITHUB_TOKEN` ou `GITHUB_TOKEN`) ou clone local:
+### Clone local
 
 ```bash
-export PLY_GITHUB_TOKEN=ghp_…   # fine-grained ou classic, escopo repo
-curl -fsSL \
-  -H "Authorization: Bearer $PLY_GITHUB_TOKEN" \
-  -H "Accept: application/vnd.github.raw+json" \
-  "https://api.github.com/repos/adrianomirandaa/ply/contents/install.sh?ref=master" | bash
-```
-
-O `install.sh` remoto detecta o token e baixa o tarball via API do GitHub. Com `gh` autenticado, o token é inferido automaticamente.
-
-Se você já clonou este repositório:
-
-```bash
+git clone https://github.com/adrianomirandaa/ply.git
+cd ply
 ./install.sh /caminho/do/seu-repo   # default: cwd
 ```
 
-Os dois caminhos copiam `ply`, rodam `./ply init --kit …` (ledger em `.ply/` + skill
+O `install.sh` copia `ply`, roda `./ply init --kit …` (ledger em `.ply/` + skill
 `ply-flow` + bloco marcado em `AGENTS.md` na raiz, com `CLAUDE.md` como symlink).
 Depois edite `.ply/config` e ajuste `TEST_CMD` para o comando de teste do projeto
 (o campo `test:` de cada task vira argumento dele).
 
 Reinstalar / atualizar kit: rode o mesmo comando de novo (idempotente; o bloco
 entre `<!-- ply:start -->` e `<!-- ply:end -->` em `AGENTS.md` é atualizado in-place).
+
+### Fork ou mirror privado
+
+Se você mantém um fork ou mirror **privado**, use clone local ou passe um token
+GitHub (`PLY_GITHUB_TOKEN`, `GITHUB_TOKEN` — inferido automaticamente com `gh`
+autenticado). Para tarball autenticado, defina `PLY_REPO=seu-usuario/ply`:
+
+```bash
+export PLY_GITHUB_TOKEN=ghp_…   # fine-grained ou classic, escopo repo
+export PLY_REPO=seu-usuario/ply
+curl -fsSL \
+  -H "Authorization: Bearer $PLY_GITHUB_TOKEN" \
+  -H "Accept: application/vnd.github.raw+json" \
+  "https://api.github.com/repos/${PLY_REPO}/contents/install.sh?ref=master" | bash
+```
+
+## Desenvolvimento
+
+Contribuir ou rodar localmente — sem dependências além de bash e coreutils:
+
+```bash
+git clone https://github.com/adrianomirandaa/ply.git
+cd ply
+./test_ply.sh
+```
 
 ## Primeiros 5 minutos
 
