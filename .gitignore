@@ -1,8 +1,4 @@
 .superpowers/
 docs/
+.agents/
 
-# traces/scratch de debug (não versionar) — use a convenção *.trace p/ novos
-/ce2
-/r2
-/tr2
-*.trace

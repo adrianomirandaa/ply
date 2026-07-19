@@ -1,9 +1,6 @@
 # ply
 
-`ply` é um ledger de tarefas **token-frugal**, **observável** e **paralelo por pull**:
-o estado do trabalho vive em arquivos Markdown e o agente LLM consome apenas a
-saída mínima de cada comando. O script é bash puro + coreutils — **nunca chama
-LLM e nunca faz rede**; toda decisão de gate é determinística.
+`ply` é um ledger de tarefas **token-frugal**, **observável** e **paralelo por pull**: o estado do trabalho vive em arquivos Markdown e o agente LLM consome apenas a saída mínima de cada comando. O script é bash puro + coreutils — **nunca chama LLM e nunca faz rede**; toda decisão de gate é determinística.
 
 Licenciado sob [MIT](LICENSE).
 
@@ -57,17 +54,11 @@ id=$(./ply next)                         # próxima task desbloqueada
 | `.ply/specs/*.md` | só se o AC do brief não bastar | opcional |
 | `.ply/journal/*.md`, `.ply/tasks/LESSONS.md` | nunca no loop; leitura humana / skim inicial | fora do caminho quente |
 
-O agente **nunca** lê o backlog inteiro: puxa só a task da vez. `./ply metrics`
-mede o proxy (bytes servidos por task, em `.ply/usage.tsv`) e, com `<id>`, o
-custo real somando os tokens dos transcripts do Claude Code na janela `start→done`.
+O agente **nunca** lê o backlog inteiro: puxa só a task da vez. `./ply metrics` mede o proxy (bytes servidos por task, em `.ply/usage.tsv`) e, com `<id>`, o custo real somando os tokens dos transcripts do Claude Code na janela `start→done`.
 
 ## Paralelismo
 
-Rode N sessões com `PLY_AS` distintos. Cada uma faz `./ply next` (pull) e
-`./ply claim` (lock atômico via `mkdir`): quem perde a corrida simplesmente pega
-a próxima. Tasks que declaram os mesmos `files:` **nunca** são servidas em
-paralelo — é o veto por overlap do `ply next`. Convenção recomendada: 1 worktree
-git por agente.
+Rode N sessões com `PLY_AS` distintos. Cada uma faz `./ply next` (pull) e `./ply claim` (lock atômico via `mkdir`): quem perde a corrida simplesmente pega a próxima. Tasks que declaram os mesmos `files:` **nunca** são servidas em paralelo — é o veto por overlap do `ply next`. Convenção recomendada: 1 worktree git por agente.
 
 ```bash
 git worktree add ../repo-ag2 -b ag2 && (cd ../repo-ag2 && export PLY_AS=ag2 && ./ply next)

@@ -120,12 +120,35 @@ install_kit() { # install_kit <kit_dir>
   ensure_claude_link
 }
 
+detect_test_cmd() { # detect_test_cmd → imprime comando sugerido pelos marcadores do projeto (vazio = não detectado)
+  cd "$ROOT" || return
+  if [ -f package.json ] && grep -q '"test":' package.json \
+     && ! grep -q '"test": "echo \\"Error: no test specified\\" && exit 1"' package.json; then
+    echo "npm test"; return
+  fi
+  [ -f Cargo.toml ]    && { echo "cargo test"; return; }
+  [ -f go.mod ]        && { echo "go test ./..."; return; }
+  [ -f Gemfile ]       && { echo "bundle exec rspec"; return; }
+  [ -f composer.json ] && { echo "vendor/bin/phpunit"; return; }
+  { [ -f pyproject.toml ] || [ -f setup.py ] || [ -f pytest.ini ] || ls requirements*.txt >/dev/null 2>&1; } \
+    && { echo "pytest -q"; return; }
+  [ -f Makefile ] && grep -q '^test:' Makefile && { echo "make test"; return; }
+  echo ""
+}
+
 cmd_init() {
-  local kit
+  local kit guess
   kit=$(resolve_kit "$@") || exit 1
   migrate_legacy_layout
   mkdir -p "$TASKS" "$SPECS" "$JOURNAL" "$CLAIMS"
-  [ -f "$PLYD/config" ] || printf '# comando de teste do projeto (test: da task vira argumento)\nTEST_CMD="pytest -q"\n' > "$PLYD/config"
+  if [ ! -f "$PLYD/config" ]; then
+    guess=$(detect_test_cmd)
+    if [ -n "$guess" ]; then
+      printf '# comando de teste do projeto (detectado; ajuste se necessário)\nTEST_CMD="%s"\n' "$guess" > "$PLYD/config"
+    else
+      printf '# comando de teste do projeto (test: da task vira argumento) — nenhum detectado, AJUSTE\nTEST_CMD=""\n' > "$PLYD/config"
+    fi
+  fi
   [ -f "$TASKS/_template.md" ] || cat > "$TASKS/_template.md" <<'EOF'
 ---
 id: 000
@@ -381,6 +404,7 @@ cmd_check() { # gate anti-alucinação: nada de done sem evidência
   done
   t=$(fm "$f" test)
   if [ -n "$t" ]; then
+    [ -n "$TEST_CMD" ] || die "TEST_CMD vazio em .ply/config — configure o comando de teste do projeto"
     echo "→ rodando: $TEST_CMD $t"
     if eval "$TEST_CMD $t" > "$PLYD/last-test.log" 2>&1; then
       echo "PASS: teste verde"

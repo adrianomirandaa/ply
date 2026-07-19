@@ -17,6 +17,26 @@ t "init cria template task"   test -f "$S/.ply/tasks/_template.md"
 t "init cria template spec"   test -f "$S/.ply/specs/_template.md"
 t "init é idempotente"        bash -c "cd '$S' && ./ply init --kit '$KIT'"
 
+# --- Task 1b: detect_test_cmd ---
+S=$(mktemp -d); cp "$SRC" "$S/ply"; echo '{"scripts":{"test":"jest"}}' > "$S/package.json"
+bash -c "cd '$S' && ./ply init --kit '$KIT' >/dev/null"
+t "detecta npm test"    bash -c "cd '$S' && grep -q 'TEST_CMD=\"npm test\"' .ply/config"
+
+S=$(mktemp -d); cp "$SRC" "$S/ply"; touch "$S/Cargo.toml"
+bash -c "cd '$S' && ./ply init --kit '$KIT' >/dev/null"
+t "detecta cargo test"  bash -c "cd '$S' && grep -q 'TEST_CMD=\"cargo test\"' .ply/config"
+
+S=$(mktemp -d); cp "$SRC" "$S/ply"; touch "$S/go.mod"
+bash -c "cd '$S' && ./ply init --kit '$KIT' >/dev/null"
+t "detecta go test"     bash -c "cd '$S' && grep -q 'TEST_CMD=\"go test ./...\"' .ply/config"
+
+sandbox
+t "sem marcador → TEST_CMD vazio" bash -c "cd '$S' && grep -q 'TEST_CMD=\"\"' .ply/config"
+bash -c "cd '$S' && printf 'TEST_CMD=\"\"\n' > .ply/config && ./ply new 'Sem cmd' >/dev/null &&
+  awk '{ if (\$0 ~ /^test:/) print \"test: t/x.sh\"; else print }' .ply/tasks/001-sem-cmd.md > t && mv t .ply/tasks/001-sem-cmd.md &&
+  ./ply claim 001 --as a1 >/dev/null && ./ply start 001 --as a1 >/dev/null"
+tf "check com TEST_CMD vazio falha com mensagem" bash -c "cd '$S' && ./ply check 001"
+
 # --- Task 2: new / spec ---
 sandbox
 t "new cria 001"        bash -c "cd '$S' && ./ply new 'Parser XML' && test -f .ply/tasks/001-parser-xml.md"
